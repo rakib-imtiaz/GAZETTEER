@@ -3,7 +3,10 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description"
+        content="Gazetteer - Explore detailed information about countries around the world including demographics, geography, weather and more.">
+    <meta name="theme-color" content="#3b82f6">
     <title>Gazetteer - Explore Countries</title>
 
     <!-- Favicon -->
@@ -28,6 +31,9 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -47,11 +53,15 @@
             <a class="navbar-brand" href="#">
                 <i class="fas fa-globe-americas"></i> Gazetteer
             </a>
+
             <div class="d-flex align-items-center">
-                <select id="countrySelect" class="form-select">
-                    <option selected disabled value="">Select a country...</option>
-                    <!-- Countries will be populated here via JavaScript -->
-                </select>
+                <div class="dropdown-container position-relative">
+                    <select id="countrySelect" class="form-select">
+                        <option selected disabled value="">Select a country</option>
+                        <!-- Countries will be populated here via JavaScript -->
+                    </select>
+                    <i class="fas fa-search position-absolute search-icon"></i>
+                </div>
             </div>
         </div>
     </nav>
@@ -59,10 +69,45 @@
     <!-- Map Container -->
     <div id="map"></div>
 
+    <!-- Mobile Action Button -->
+    <div class="mobile-fab-button d-md-none">
+        <button id="mobileMenuBtn" class="btn btn-primary rounded-circle shadow">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+
+    <!-- Mobile Bottom Sheet (for small screens) -->
+    <div class="mobile-bottom-sheet d-md-none">
+        <div class="bottom-sheet-handle">
+            <div class="handle-indicator"></div>
+        </div>
+        <div class="bottom-sheet-content p-3">
+            <h5 class="mb-3">Quick Actions</h5>
+            <div class="d-flex flex-wrap justify-content-between">
+                <button id="mobileMyLocation" class="action-btn mb-3">
+                    <i class="fas fa-location-arrow"></i>
+                    <span>My Location</span>
+                </button>
+                <button id="mobileExplore" class="action-btn mb-3">
+                    <i class="fas fa-compass"></i>
+                    <span>Explore</span>
+                </button>
+                <button id="mobileInfo" class="action-btn mb-3">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Country Info</span>
+                </button>
+                <button id="mobileShare" class="action-btn mb-3">
+                    <i class="fas fa-share-alt"></i>
+                    <span>Share</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Country Info Modal -->
     <div class="modal fade" id="countryInfoModal" tabindex="-1" aria-labelledby="countryInfoModalLabel"
         aria-hidden="true">
-        <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-dialog modal-dialog-scrollable modal-lg modal-fullscreen-md-down">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="countryInfoModalLabel">Country Information</h5>
@@ -70,68 +115,128 @@
                 </div>
                 <div class="modal-body">
                     <div class="country-header mb-4">
-                        <img id="countryFlag" src="" alt="Flag" class="flag-img">
-                        <h2 id="countryName"></h2>
-                        <p id="countryCapital" class="text-muted"></p>
-                        </div>
+                        <img id="countryFlag" src="" alt="Flag" class="flag-img animate__animated animate__fadeIn">
+                        <h2 id="countryName" class="animate__animated animate__fadeIn"></h2>
+                        <p id="countryCapital" class="text-muted animate__animated animate__fadeIn"></p>
+                    </div>
 
-                    <!-- Basic Information -->
-                    <div class="section">
-                        <h4>Basic Information</h4>
+                    <!-- Tab Navigation -->
+                    <ul class="nav nav-tabs nav-fill mb-4" id="countryTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="basic-tab" data-bs-toggle="tab"
+                                data-bs-target="#basic-tab-pane" type="button">
+                                <i class="fas fa-info-circle me-1 d-none d-sm-inline-block"></i> Basic
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="weather-tab" data-bs-toggle="tab"
+                                data-bs-target="#weather-tab-pane" type="button">
+                                <i class="fas fa-cloud-sun me-1 d-none d-sm-inline-block"></i> Weather
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="more-tab" data-bs-toggle="tab" data-bs-target="#more-tab-pane"
+                                type="button">
+                                <i class="fas fa-book me-1 d-none d-sm-inline-block"></i> Learn More
+                            </button>
+                        </li>
+                    </ul>
+
+                    <!-- Tab Content -->
+                    <div class="tab-content" id="countryTabsContent">
+                        <!-- Basic Information Tab -->
+                        <div class="tab-pane fade show active" id="basic-tab-pane" role="tabpanel"
+                            aria-labelledby="basic-tab">
+                            <div class="section">
                                 <div class="row">
-                            <div class="col-md-6">
-                                <ul class="list-group">
-                                    <li class="list-group-item d-flex justify-content-between">
-                                        <span>Population:</span>
-                                        <span id="population"></span>
-                                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between">
-                                        <span>Region:</span>
-                                        <span id="region"></span>
-                                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between">
-                                        <span>Currency:</span>
-                                        <span id="currency"></span>
-                                                    </li>
-                                                </ul>
-                                            </div>
-                            <div class="col-md-6">
-                                <ul class="list-group">
-                                    <li class="list-group-item d-flex justify-content-between">
-                                        <span>Area:</span>
-                                        <span id="area"></span>
-                                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between">
-                                        <span>Languages:</span>
-                                        <span id="languages"></span>
-                                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between">
-                                        <span>Timezone:</span>
-                                                        <span id="timezone"></span>
-                                                    </li>
-                                                </ul>
+                                    <div class="col-md-6">
+                                        <ul class="list-group">
+                                            <li
+                                                class="list-group-item d-flex justify-content-between align-items-center">
+                                                <span><i class="fas fa-users me-2 text-primary"></i> Population:</span>
+                                                <span id="population" class="fw-semibold"></span>
+                                            </li>
+                                            <li
+                                                class="list-group-item d-flex justify-content-between align-items-center">
+                                                <span><i class="fas fa-map-marker-alt me-2 text-primary"></i>
+                                                    Region:</span>
+                                                <span id="region" class="fw-semibold"></span>
+                                            </li>
+                                            <li
+                                                class="list-group-item d-flex justify-content-between align-items-center">
+                                                <span><i class="fas fa-money-bill-wave me-2 text-primary"></i>
+                                                    Currency:</span>
+                                                <span id="currency" class="fw-semibold"></span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6 mt-3 mt-md-0">
+                                        <ul class="list-group">
+                                            <li
+                                                class="list-group-item d-flex justify-content-between align-items-center">
+                                                <span><i class="fas fa-ruler-combined me-2 text-primary"></i>
+                                                    Area:</span>
+                                                <span id="area" class="fw-semibold"></span>
+                                            </li>
+                                            <li
+                                                class="list-group-item d-flex justify-content-between align-items-center">
+                                                <span><i class="fas fa-language me-2 text-primary"></i>
+                                                    Languages:</span>
+                                                <span id="languages" class="fw-semibold"></span>
+                                            </li>
+                                            <li
+                                                class="list-group-item d-flex justify-content-between align-items-center">
+                                                <span><i class="far fa-clock me-2 text-primary"></i> Timezone:</span>
+                                                <span id="timezone" class="fw-semibold"></span>
+                                            </li>
+                                        </ul>
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                    <!-- Weather Information -->
-                    <div class="section mt-4">
-                        <h4>Weather in Capital</h4>
-                        <div class="weather-container text-center mb-3">
-                            <img id="weatherIcon" src="" alt="Weather Icon">
-                            <h3 id="temperature"></h3>
-                            <p id="weatherDescription"></p>
+                        <!-- Weather Tab -->
+                        <div class="tab-pane fade" id="weather-tab-pane" role="tabpanel" aria-labelledby="weather-tab">
+                            <div class="section">
+                                <div class="weather-container text-center mb-3">
+                                    <img id="weatherIcon" src="" alt="Weather Icon"
+                                        class="animate__animated animate__bounceIn">
+                                    <h3 id="temperature" class="mb-2"></h3>
+                                    <p id="weatherDescription" class="mb-4"></p>
+
+                                    <div class="row mt-4 weather-details">
+                                        <div class="col-6">
+                                            <div class="weather-detail-item">
+                                                <i class="fas fa-tint fs-4 mb-2 text-primary"></i>
+                                                <p class="detail-label">Humidity</p>
+                                                <p id="humidity" class="detail-value">--</p>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="weather-detail-item">
+                                                <i class="fas fa-wind fs-4 mb-2 text-primary"></i>
+                                                <p class="detail-label">Wind Speed</p>
+                                                <p id="windSpeed" class="detail-value">--</p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+                        </div>
 
-                    <!-- Wikipedia Links -->
-                    <div class="section mt-4">
-                        <h4>Learn More</h4>
-                                                <div id="wikipediaLinks"></div>
+                        <!-- Learn More Tab -->
+                        <div class="tab-pane fade" id="more-tab-pane" role="tabpanel" aria-labelledby="more-tab">
+                            <div class="section">
+                                <div id="wikipediaLinks"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" id="shareCountryBtn" class="btn btn-primary">
+                        <i class="fas fa-share-alt me-1"></i> Share
+                    </button>
                 </div>
             </div>
         </div>
@@ -152,6 +257,9 @@
 
     <!-- Leaflet Easy Button JS -->
     <script src="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.js"></script>
+
+    <!-- Hammer.js for touch gestures -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
 
     <!-- Custom JS -->
     <script src="js/script.js"></script>

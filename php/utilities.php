@@ -162,9 +162,16 @@ function findCountryByCode($countryCode)
     // Ensure country code is uppercase
     $countryCode = strtoupper($countryCode);
 
+    // Track the best match found with priority scoring
+    $bestMatch = null;
+    $bestScore = -1;
+
     // From test results, we know the actual fields used in this GeoJSON file
     $iso2Field = 'ISO3166-1-Alpha-2';
     $iso3Field = 'ISO3166-1-Alpha-3';
+
+    // Log the search attempt
+    error_log("Searching for country with code: " . $countryCode);
 
     // Search for the country in the GeoJSON features
     foreach ($countryBorders['features'] as $feature) {
@@ -172,19 +179,35 @@ function findCountryByCode($countryCode)
             continue;
         }
 
-        // Check for the exact field names we discovered in the test
+        // Score starts at 0 for each feature
+        $matchScore = 0;
+
+        // Check ISO2 field (exact match) - highest priority
         if (
             isset($feature['properties'][$iso2Field]) &&
             strtoupper($feature['properties'][$iso2Field]) === $countryCode
         ) {
-            return $feature;
+            $matchScore = 100; // Highest priority for exact ISO2 match
+            error_log("Exact ISO2 match found for " . $countryCode . " with " . $feature['properties']['name']);
+            return $feature; // Immediately return on exact ISO2 match
         }
 
+        // Check ISO3 field (exact match) - high priority
         if (
             isset($feature['properties'][$iso3Field]) &&
             strtoupper($feature['properties'][$iso3Field]) === $countryCode
         ) {
-            return $feature;
+            $matchScore = 90; // High priority for exact ISO3 match
+            error_log("Exact ISO3 match found for " . $countryCode . " with " . $feature['properties']['name']);
+        }
+
+        // For 2-letter codes, check if the first 2 letters of ISO3 match (only if length is 2)
+        if (
+            strlen($countryCode) === 2 &&
+            isset($feature['properties'][$iso3Field]) &&
+            strtoupper(substr($feature['properties'][$iso3Field], 0, 2)) === $countryCode
+        ) {
+            $matchScore = 80; // Medium-high priority for ISO3 prefix match
         }
 
         // Check standard field variants as fallback
@@ -194,42 +217,242 @@ function findCountryByCode($countryCode)
                 isset($feature['properties'][$field]) &&
                 strtoupper($feature['properties'][$field]) === $countryCode
             ) {
-                return $feature;
+                $matchScore = 70; // Lower priority for other standard fields
             }
         }
 
-        // Check if the country code is part of the name (last resort)
+        // Check if exact country name (very reliable)
         if (isset($feature['properties']['name'])) {
-            $name = $feature['properties']['name'];
-            // Either the code equals the name exactly or the name contains the code
-            if (
-                strtoupper($name) === $countryCode ||
-                strpos(strtoupper($name), $countryCode) !== false
-            ) {
-                return $feature;
+            if (strtoupper($feature['properties']['name']) === strtoupper($countryCode)) {
+                $matchScore = 60;
+            }
+        }
+
+        // Keep track of the best match
+        if ($matchScore > $bestScore) {
+            $bestScore = $matchScore;
+            $bestMatch = $feature;
+
+            // If we found an extremely high confidence match, return it immediately
+            if ($matchScore >= 90) {
+                return $bestMatch;
             }
         }
     }
 
+    // If we found a relatively good match, return it
+    if ($bestScore >= 60) {
+        error_log("Using best match for " . $countryCode . ": " .
+            (isset($bestMatch['properties']['name']) ? $bestMatch['properties']['name'] : 'Unknown') .
+            " with score " . $bestScore);
+        return $bestMatch;
+    }
+
     // For 2-letter codes, try to convert to 3-letter code if no match yet
-    if (strlen($countryCode) === 2) {
+    if (strlen($countryCode) === 2 && $bestScore < 60) {
         // Map of some common 2-letter to 3-letter codes for countries
         $iso2to3 = [
-            'US' => 'USA',
-            'GB' => 'GBR',
-            'FR' => 'FRA',
-            'DE' => 'DEU',
-            'JP' => 'JPN',
-            'CN' => 'CHN',
-            'CA' => 'CAN',
+            'AD' => 'AND',
+            'AE' => 'ARE',
+            'AF' => 'AFG',
+            'AG' => 'ATG',
+            'AL' => 'ALB',
+            'AM' => 'ARM',
+            'AO' => 'AGO',
+            'AR' => 'ARG',
+            'AT' => 'AUT',
             'AU' => 'AUS',
+            'AZ' => 'AZE',
+            'BA' => 'BIH',
+            'BB' => 'BRB',
+            'BD' => 'BGD',
+            'BE' => 'BEL',
+            'BF' => 'BFA',
+            'BG' => 'BGR',
+            'BH' => 'BHR',
+            'BI' => 'BDI',
+            'BJ' => 'BEN',
+            'BN' => 'BRN',
+            'BO' => 'BOL',
             'BR' => 'BRA',
-            'RU' => 'RUS',
+            'BS' => 'BHS',
+            'BT' => 'BTN',
+            'BW' => 'BWA',
+            'BY' => 'BLR',
+            'BZ' => 'BLZ',
+            'CA' => 'CAN',
+            'CD' => 'COD',
+            'CF' => 'CAF',
+            'CG' => 'COG',
+            'CH' => 'CHE',
+            'CI' => 'CIV',
+            'CL' => 'CHL',
+            'CM' => 'CMR',
+            'CN' => 'CHN',
+            'CO' => 'COL',
+            'CR' => 'CRI',
+            'CU' => 'CUB',
+            'CV' => 'CPV',
+            'CY' => 'CYP',
+            'CZ' => 'CZE',
+            'DE' => 'DEU',
+            'DJ' => 'DJI',
+            'DK' => 'DNK',
+            'DM' => 'DMA',
+            'DO' => 'DOM',
+            'DZ' => 'DZA',
+            'EC' => 'ECU',
+            'EE' => 'EST',
+            'EG' => 'EGY',
+            'ER' => 'ERI',
+            'ES' => 'ESP',
+            'ET' => 'ETH',
+            'FI' => 'FIN',
+            'FJ' => 'FJI',
+            'FM' => 'FSM',
+            'FR' => 'FRA',
+            'GA' => 'GAB',
+            'GB' => 'GBR',
+            'GD' => 'GRD',
+            'GE' => 'GEO',
+            'GH' => 'GHA',
+            'GM' => 'GMB',
+            'GN' => 'GIN',
+            'GQ' => 'GNQ',
+            'GR' => 'GRC',
+            'GT' => 'GTM',
+            'GW' => 'GNB',
+            'GY' => 'GUY',
+            'HN' => 'HND',
+            'HR' => 'HRV',
+            'HT' => 'HTI',
+            'HU' => 'HUN',
+            'ID' => 'IDN',
+            'IE' => 'IRL',
+            'IL' => 'ISR',
             'IN' => 'IND',
-            'ZA' => 'ZAF'
+            'IQ' => 'IRQ',
+            'IR' => 'IRN',
+            'IS' => 'ISL',
+            'IT' => 'ITA',
+            'JM' => 'JAM',
+            'JO' => 'JOR',
+            'JP' => 'JPN',
+            'KE' => 'KEN',
+            'KG' => 'KGZ',
+            'KH' => 'KHM',
+            'KI' => 'KIR',
+            'KM' => 'COM',
+            'KN' => 'KNA',
+            'KP' => 'PRK',
+            'KR' => 'KOR',
+            'KW' => 'KWT',
+            'KZ' => 'KAZ',
+            'LA' => 'LAO',
+            'LB' => 'LBN',
+            'LC' => 'LCA',
+            'LI' => 'LIE',
+            'LK' => 'LKA',
+            'LR' => 'LBR',
+            'LS' => 'LSO',
+            'LT' => 'LTU',
+            'LU' => 'LUX',
+            'LV' => 'LVA',
+            'LY' => 'LBY',
+            'MA' => 'MAR',
+            'MC' => 'MCO',
+            'MD' => 'MDA',
+            'ME' => 'MNE',
+            'MG' => 'MDG',
+            'MH' => 'MHL',
+            'MK' => 'MKD',
+            'ML' => 'MLI',
+            'MM' => 'MMR',
+            'MN' => 'MNG',
+            'MR' => 'MRT',
+            'MT' => 'MLT',
+            'MU' => 'MUS',
+            'MV' => 'MDV',
+            'MW' => 'MWI',
+            'MX' => 'MEX',
+            'MY' => 'MYS',
+            'MZ' => 'MOZ',
+            'NA' => 'NAM',
+            'NE' => 'NER',
+            'NG' => 'NGA',
+            'NI' => 'NIC',
+            'NL' => 'NLD',
+            'NO' => 'NOR',
+            'NP' => 'NPL',
+            'NR' => 'NRU',
+            'NZ' => 'NZL',
+            'OM' => 'OMN',
+            'PA' => 'PAN',
+            'PE' => 'PER',
+            'PG' => 'PNG',
+            'PH' => 'PHL',
+            'PK' => 'PAK',
+            'PL' => 'POL',
+            'PT' => 'PRT',
+            'PW' => 'PLW',
+            'PY' => 'PRY',
+            'QA' => 'QAT',
+            'RO' => 'ROU',
+            'RS' => 'SRB',
+            'RU' => 'RUS',
+            'RW' => 'RWA',
+            'SA' => 'SAU',
+            'SB' => 'SLB',
+            'SC' => 'SYC',
+            'SD' => 'SDN',
+            'SE' => 'SWE',
+            'SG' => 'SGP',
+            'SI' => 'SVN',
+            'SK' => 'SVK',
+            'SL' => 'SLE',
+            'SM' => 'SMR',
+            'SN' => 'SEN',
+            'SO' => 'SOM',
+            'SR' => 'SUR',
+            'SS' => 'SSD',
+            'ST' => 'STP',
+            'SV' => 'SLV',
+            'SY' => 'SYR',
+            'SZ' => 'SWZ',
+            'TD' => 'TCD',
+            'TG' => 'TGO',
+            'TH' => 'THA',
+            'TJ' => 'TJK',
+            'TL' => 'TLS',
+            'TM' => 'TKM',
+            'TN' => 'TUN',
+            'TO' => 'TON',
+            'TR' => 'TUR',
+            'TT' => 'TTO',
+            'TV' => 'TUV',
+            'TZ' => 'TZA',
+            'UA' => 'UKR',
+            'UG' => 'UGA',
+            'US' => 'USA',
+            'UY' => 'URY',
+            'UZ' => 'UZB',
+            'VA' => 'VAT',
+            'VC' => 'VCT',
+            'VE' => 'VEN',
+            'VN' => 'VNM',
+            'VU' => 'VUT',
+            'WS' => 'WSM',
+            'XK' => 'XKX',
+            'YE' => 'YEM',
+            'ZA' => 'ZAF',
+            'ZM' => 'ZMB',
+            'ZW' => 'ZWE'
         ];
 
         if (isset($iso2to3[$countryCode])) {
+            $iso3Code = $iso2to3[$countryCode];
+            error_log("Converting $countryCode to ISO3: $iso3Code");
+
             // Search using the 3-letter code
             foreach ($countryBorders['features'] as $feature) {
                 if (!isset($feature['properties'])) {
@@ -238,13 +461,15 @@ function findCountryByCode($countryCode)
 
                 if (
                     isset($feature['properties'][$iso3Field]) &&
-                    strtoupper($feature['properties'][$iso3Field]) === $iso2to3[$countryCode]
+                    strtoupper($feature['properties'][$iso3Field]) === $iso3Code
                 ) {
+                    error_log("Found match using ISO3 code conversion: " . $feature['properties']['name']);
                     return $feature;
                 }
             }
         }
     }
 
+    error_log("No match found for country code: " . $countryCode);
     return null;
 }
