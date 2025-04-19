@@ -1,0 +1,28 @@
+# Enable PHP processing
+<FilesMatch "\.php$">
+    SetHandler application/x-httpd-php
+</FilesMatch>
+
+# Set default index file
+DirectoryIndex index.html index.php
+
+# Allow cross-origin requests
+<IfModule mod_headers.c>
+    Header set Access-Control-Allow-Origin "*"
+    Header set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+    Header set Access-Control-Allow-Headers "Content-Type"
+</IfModule>
+
+# URL rewriting
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /GAZETTEER/
+    
+    # Handle API calls - fixing the path to ensure PHP files are found
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^api/(.*)$ php/$1.php [L,QSA]
+    
+    # Add explicit rule for test cases
+    RewriteRule ^test$ test.php [L]
+</IfModule> 

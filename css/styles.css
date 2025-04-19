@@ -1,0 +1,140 @@
+/* General Styles */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+/* Navbar Styles */
+.navbar {
+    padding: 10px 15px;
+    z-index: 1000;
+}
+
+#countrySelect {
+    width: 200px;
+}
+
+/* Map Container */
+#map {
+    height: calc(100vh - 56px);
+    width: 100%;
+    z-index: 1;
+}
+
+/* Preloader */
+#preloader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+/* Country Modal Styles */
+.country-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.flag-img {
+    max-width: 150px;
+    height: auto;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+}
+
+.section {
+    margin-bottom: 25px;
+}
+
+/* Weather Container */
+.weather-container {
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    padding: 15px;
+}
+
+#weatherIcon {
+    width: 80px;
+    height: 80px;
+}
+
+/* User Location Marker */
+.user-location-marker {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.pulse-animation {
+    color: #dc3545;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(0.95);
+        opacity: 0.7;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(0.95);
+        opacity: 0.7;
+    }
+}
+
+/* Country Border Style */
+.country-border {
+    transition: all 0.3s ease;
+}
+
+/* Toast Notifications */
+.notification-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    color: white;
+    z-index: 2000;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-20px);
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.notification-toast.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.toast-content {
+    display: flex;
+    align-items: center;
+}
+
+/* Responsive Styles */
+@media (max-width: 576px) {
+    #countrySelect {
+        width: 150px;
+    }
+
+    .flag-img {
+        max-width: 100px;
+    }
+}
